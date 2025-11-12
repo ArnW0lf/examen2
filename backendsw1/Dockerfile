@@ -1,10 +1,8 @@
 # -----------------------------------------------------------------
 # ETAPA 1: El Entorno Base (Node.js + Dependencias de Flutter)
 # -----------------------------------------------------------------
-# Usamos Node 18, que es compatible con la mayoría de los builds
 FROM node:18-slim
 
-# Instalar dependencias del sistema (git, curl, etc.)
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -14,11 +12,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # -----------------------------------------------------------------
-# ETAPA 2: Instalar el SDK de Flutter (Versión Corregida)
+# ETAPA 2: Instalar el SDK de Flutter (Versión Corregida 3.0)
 # -----------------------------------------------------------------
 WORKDIR /usr/local
 
-# Descargar y descomprimir Flutter
 RUN curl -o flutter.tar.xz "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.22.2-stable.tar.xz"
 RUN tar -xf flutter.tar.xz
 RUN rm flutter.tar.xz
@@ -26,23 +23,17 @@ RUN rm flutter.tar.xz
 # Añadir Flutter al PATH del sistema
 ENV PATH="$PATH:/usr/local/flutter/bin"
 
-# --- INICIO DE LAS CORRECCIONES ---
-
-# CORRECCIÓN 1: Arreglar el error "flutter: not found" de Node.js
-# Creamos un "acceso directo" (symlink) en una carpeta universal.
+# CORRECCIÓN 1: Arreglar "flutter: not found"
 RUN ln -s /usr/local/flutter/bin/flutter /usr/bin/flutter
 
-# CORRECCIÓN 2: Arreglar el error "fatal: detected dubious ownership"
-# Le decimos a Git que es seguro correrlo como root en este directorio.
+# CORRECCIÓN 2: Arreglar "fatal: detected dubious ownership"
 RUN git config --global --add safe.directory /usr/local/flutter
 
-# CORRECCIÓN 3: Arreglar el error "SDK version 0.0.0-unknown"
-# Forzamos a Flutter a descargar todos sus binarios y auto-revisarse.
-# Esto se ejecuta DESPUÉS de arreglar los permisos de Git.
+# --- ¡LA CORRECCIÓN CLAVE! ---
+# CORRECCIÓN 3: Arreglar "SDK version 0.0.0-unknown"
+# Forzamos a Flutter a que se configure, descargue binarios y conozca su propia versión.
+RUN flutter upgrade
 RUN flutter doctor
-RUN flutter precache
-
-# --- FIN DE LAS CORRECCIONES ---
 
 # -----------------------------------------------------------------
 # ETAPA 3: Preparar NUESTRA Aplicación de Node.js
@@ -53,5 +44,4 @@ RUN npm install
 COPY . .
 EXPOSE 10000
 
-# Comando de inicio (de tu package.json)
 CMD [ "npm", "start" ]
