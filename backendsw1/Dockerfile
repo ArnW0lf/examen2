@@ -22,15 +22,19 @@ RUN curl -o flutter.tar.xz "https://storage.googleapis.com/flutter_infra_release
 RUN tar -xf flutter.tar.xz
 RUN rm flutter.tar.xz
 
-# 5. Añadir el SDK de Flutter al PATH del sistema
+# Añadir el SDK de Flutter al PATH del sistema
 ENV PATH="$PATH:/usr/local/flutter/bin"
 
-# 6. --- ¡LA CORRECCIÓN CLAVE! ---
-# Crear un "acceso directo" (symlink) en una carpeta universal (/usr/bin)
-# Esto garantiza que Node.js (y 'exec') puedan encontrar "flutter".
+# Crear el "acceso directo" (symlink)
 RUN ln -s /usr/local/flutter/bin/flutter /usr/bin/flutter
 
-# 7. (Opcional) Aceptar licencias y precargar Flutter
+# 7. --- ¡LA NUEVA CORRECCIÓN! ---
+# Arreglar el error "fatal: detected dubious ownership"
+# Le decimos a Git que es seguro correrlo como root en este directorio.
+RUN git config --global --add safe.directory /usr/local/flutter
+
+# 8. (Opcional) Aceptar licencias y precargar Flutter
+# (Ahora 'flutter precache' sí funcionará)
 RUN flutter precache
 RUN flutter doctor
 
